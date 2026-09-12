@@ -1,0 +1,81 @@
+[project]
+name = "ctabpfn"
+authors = [{name = "Samuel Anzalone"}]
+readme = "README.md"
+requires-python = ">=3.13"
+version = "0.1.0"
+dependencies = [
+    "numpy>=1.26",
+    "scikit-learn>=1.5",
+    "tabpfn>=8.5.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.25,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pre-commit",
+    "ruff",
+    "ty",
+]
+
+[tool.ruff.lint]
+select = [
+    "F",  # pyflakes: unused imports, undefined names
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "I",  # isort: import sorting
+    "D",  # pydocstyle: docstring conventions
+    "ANN",  # flake8-annotations: require type annotations
+    "N",  # pep8 naming conventions
+    "UP",  # pyupgrade: modern syntax
+    "ASYNC",  # async/await bug checks
+    "S",  # bandit: security issues
+    "BLE",  # blind except clauses
+    "B",  # bugbear: likely bugs
+    "A",  # shadowed builtins
+    "C4",  # better comprehensions
+    "DTZ",  # timezone-aware datetimes
+    "ISC",  # implicit string concatenation
+    "ICN",  # import naming conventions
+    "LOG",  # logging misuse
+    "G",  # logging format strings
+    "PIE",  # misc lint cleanups
+    "RSE",  # raise statement cleanups
+    "RET",  # return statement cleanups
+    "SLF",  # private member access
+    "SIM",  # simplifiable code
+    "TID",  # tidy imports
+    "TC",  # type-checking import blocks
+    "FLY",  # static joins to f-strings
+    "PERF",  # performance anti-patterns
+    "PLC",  # pylint conventions
+    "PLE",  # pylint errors
+    "PLW",  # pylint warnings
+    "RUF",  # ruff-specific rules
+]
+
+ignore = [
+    "W191",  # formatter controls indentation
+    "E111",  # formatter controls indentation
+    "E114",  # formatter controls indentation
+    "E117",  # formatter controls indentation
+    "ISC001",  # conflicts with formatter string handling
+    "E501",  # line length handled by formatter
+    "PERF203",  # try/except in a loop, too noisy
+    "PLC0415",  # allow lazy/deferred imports
+    "D203",  # incompatible with D211, no blank line before class docstring
+    "D212",  # incompatible with D213, summary goes on the line below the quotes
+    "D104",  # package __init__ re-export shim needs no docstring
+    "ANN401",  # allow explicit Any in annotations
+    "N803",  # X is the conventional name for a feature matrix argument
+    "N806",  # X is the conventional name for a feature matrix variable
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "SLF001", "D", "ANN"]  # asserts, internal access, no docstrings or annotations needed in tests
+
+[tool.ruff.format]
+line-ending = "lf"

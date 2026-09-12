@@ -49,6 +49,7 @@ def predict_quantiles(
     if path is not None and path.exists():
         with np.load(path) as data:
             return data["quantiles"]
+    os.environ.setdefault("TABPFN_ALLOW_CPU_LARGE_DATASET", "1")  # snapshot at import
     from tabpfn import TabPFNRegressor  # deferred so a cache hit skips the torch import
 
     model = TabPFNRegressor(device=device, random_state=seed)

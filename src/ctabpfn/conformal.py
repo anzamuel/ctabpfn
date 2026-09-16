@@ -1,7 +1,7 @@
 """
 Conformalized TabPFN prediction intervals.
 
-Each variant splits the incoming train part 75/25 at the given seed, reads native quantiles for the calibration and test rows through `ctabpfn.inference`, and calibrates a symmetric split-conformal interval with one exact order statistic, no search and no refitting. `additive` shifts the native central interval outward by the CQR score's order statistic, `multiplicative` scales the two half widths around the native median, and `quantile_level` calibrates the quantile level itself, distributional conformal prediction on the native CDF. All three carry the finite-sample marginal coverage guarantee and return lower, upper, and the native median as center.
+Each variant splits the incoming train part at the given seed, nine tenths for fitting by default with `fit_fraction` overriding, reads native quantiles for the calibration and test rows through `ctabpfn.inference`, and calibrates a symmetric split-conformal interval with one exact order statistic, no search and no refitting. `additive` shifts the native central interval outward by the CQR score's order statistic, `multiplicative` scales the two half widths around the native median, and `quantile_level` calibrates the quantile level itself, distributional conformal prediction on the native CDF. All three carry the finite-sample marginal coverage guarantee and return lower, upper, and the native median as center.
 """
 
 import math
@@ -23,10 +23,14 @@ def _column(level: float) -> int:
 
 
 def _prepare(
-    X_train: ArrayLike, y_train: ArrayLike, X_test: ArrayLike, seed: int
+    X_train: ArrayLike,
+    y_train: ArrayLike,
+    X_test: ArrayLike,
+    seed: int,
+    fit_fraction: float,
 ) -> tuple[NDArray[np.float32], NDArray[np.float64], NDArray[np.float32]]:
     X_fit, X_cal, y_fit, y_cal = train_test_split(
-        X_train, y_train, test_size=0.25, random_state=seed
+        X_train, y_train, test_size=1.0 - fit_fraction, random_state=seed
     )
     q_cal = predict_quantiles(X_fit, y_fit, X_cal, seed)
     q_test = predict_quantiles(X_fit, y_fit, X_test, seed)
@@ -46,11 +50,12 @@ def additive(
     X_test: ArrayLike,
     coverage: float,
     seed: int,
+    fit_fraction: float = 0.9,
 ) -> tuple[NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]]:
     """Shift the native central interval outward by the conformal CQR margin."""
     alpha = 1.0 - coverage
     lo, hi = _column(alpha / 2.0), _column(1.0 - alpha / 2.0)
-    q_cal, y_cal, q_test = _prepare(X_train, y_train, X_test, seed)
+    q_cal, y_cal, q_test = _prepare(X_train, y_train, X_test, seed, fit_fraction)
     scores = np.maximum(q_cal[:, lo] - y_cal, y_cal - q_cal[:, hi])
     margin = _order_statistic(scores, alpha)
     return q_test[:, lo] - margin, q_test[:, hi] + margin, q_test[:, _column(0.5)]
@@ -62,11 +67,12 @@ def multiplicative(
     X_test: ArrayLike,
     coverage: float,
     seed: int,
+    fit_fraction: float = 0.9,
 ) -> tuple[NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]]:
     """Scale the native half widths around the median by the conformal ratio."""
     alpha = 1.0 - coverage
     lo, hi, mid = _column(alpha / 2.0), _column(1.0 - alpha / 2.0), _column(0.5)
-    q_cal, y_cal, q_test = _prepare(X_train, y_train, X_test, seed)
+    q_cal, y_cal, q_test = _prepare(X_train, y_train, X_test, seed, fit_fraction)
     median = q_cal[:, mid].astype(np.float64)
     scores = np.maximum(
         (median - y_cal) / (median - q_cal[:, lo]),
@@ -87,10 +93,11 @@ def quantile_level(
     X_test: ArrayLike,
     coverage: float,
     seed: int,
+    fit_fraction: float = 0.9,
 ) -> tuple[NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]]:
     """Calibrate the native quantile level itself and read the interval off the grid."""
     alpha = 1.0 - coverage
-    q_cal, y_cal, q_test = _prepare(X_train, y_train, X_test, seed)
+    q_cal, y_cal, q_test = _prepare(X_train, y_train, X_test, seed, fit_fraction)
     lower_cols = np.arange(GRID.size // 2)
     upper_cols = GRID.size - 1 - lower_cols
     covered = (q_cal[:, lower_cols] <= y_cal[:, None]) & (

@@ -1,7 +1,7 @@
 """
 Native TabPFN quantile inference with a content-addressed cache.
 
-`predict_quantiles` fits the pretrained TabPFN regressor and returns its predictive quantiles for each prediction row over the fixed 999-level `GRID`, every tenth of a percent from 0.001 to 0.999, so one inference serves every conformal variant and coverage level. Results are float32 and cached under a sha256 key over the raw arrays, seed, grid, tabpfn version, and device, at `~/.cache/uq-bench/ctabpfn` by default; `CTABPFN_CACHE` moves the cache, setting it empty disables it, and `UQ_BENCH_FAST` disables it too so determinism checks exercise real recomputation. Inference runs on CPU by default for reproducible output, `TABPFN_DEVICE` overrides.
+`predict_quantiles` fits the pretrained TabPFN regressor and returns its predictive quantiles for each prediction row over the fixed 999-level `GRID`, every tenth of a percent from 0.001 to 0.999, so one inference serves every conformal variant and coverage level. Results are float32 and cached under a sha256 key over the raw arrays, seed, grid, tabpfn version, and device, in a per-model directory `~/.cache/uq-bench/ctabpfn/<MODEL>` by default, since one ctabpfn release pins one tabpfn release and one set of weights; `CTABPFN_CACHE` moves the cache root, setting it empty disables it, and `UQ_BENCH_FAST` disables it too so determinism checks exercise real recomputation. Inference runs on CPU by default for reproducible output, `TABPFN_DEVICE` overrides.
 """
 
 import hashlib
@@ -13,9 +13,10 @@ from pathlib import Path
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-__all__ = ["GRID", "predict_quantiles"]
+__all__ = ["GRID", "MODEL", "predict_quantiles"]
 
 GRID: NDArray[np.float64] = np.round(np.linspace(0.001, 0.999, 999), 3)
+MODEL = "v3"  # the weights this release pins, with tabpfn 8.5.0
 
 
 def _cache_dir() -> Path | None:
@@ -24,9 +25,12 @@ def _cache_dir() -> Path | None:
     override = os.environ.get("CTABPFN_CACHE")
     if override == "":
         return None
-    if override is not None:
-        return Path(override)
-    return Path.home() / ".cache" / "uq-bench" / "ctabpfn"
+    root = (
+        Path(override)
+        if override is not None
+        else Path.home() / ".cache" / "uq-bench" / "ctabpfn"
+    )
+    return root / MODEL
 
 
 def _key(arrays: tuple[NDArray, ...], seed: int, device: str) -> str:
@@ -34,7 +38,7 @@ def _key(arrays: tuple[NDArray, ...], seed: int, device: str) -> str:
     for array in arrays:
         digest.update(f"{array.shape}|{array.dtype}|".encode())
         digest.update(array.tobytes())
-    digest.update(f"{seed}|{device}|{version('tabpfn')}".encode())
+    digest.update(f"{seed}|{device}|{version('tabpfn')}|{MODEL}".encode())
     return digest.hexdigest()
 
 

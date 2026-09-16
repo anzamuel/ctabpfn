@@ -21,4 +21,4 @@ lower, upper, center = quantile_level(X_train, y_train, X_test, coverage=0.9, se
 Run `./setup.sh` from the repository root to install dependencies with uv and the pre-commit hooks.
 
 ## Versioning
-One ctabpfn release pins one tabpfn release and one set of weights, exposed as `ctabpfn.MODEL`. This release is `v3` on tabpfn 8.5.0, the configuration of the paper. A new TabPFN generation becomes a new ctabpfn release with the dependency and `MODEL` bumped, and a benchmark method folder pins exactly one ctabpfn commit and carries the model in its name, for instance `ctabpfn-q-v3`.
+One ctabpfn release pins one tabpfn release and one set of weights, exposed as `ctabpfn.MODEL`. This release is `v3.5` on tabpfn 9.0.0; `v0.1.0` is `v3` on tabpfn 8.5.0, the configuration of the paper. A new TabPFN generation becomes a new ctabpfn release with the dependency and `MODEL` bumped, and a benchmark method folder pins exactly one ctabpfn commit and carries the model in its name, for instance `ctabpfn-q-v3`.

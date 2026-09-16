@@ -3,11 +3,11 @@ name = "ctabpfn"
 authors = [{name = "Samuel Anzalone"}]
 readme = "README.md"
 requires-python = ">=3.13"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
     "numpy>=1.26",
     "scikit-learn>=1.5",
-    "tabpfn==8.5.0",
+    "tabpfn==9.0.0",
 ]
 
 [build-system]

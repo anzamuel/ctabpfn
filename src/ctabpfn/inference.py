@@ -16,7 +16,7 @@ from numpy.typing import ArrayLike, NDArray
 __all__ = ["GRID", "MODEL", "predict_quantiles"]
 
 GRID: NDArray[np.float64] = np.round(np.linspace(0.001, 0.999, 999), 3)
-MODEL = "v3"  # the weights this release pins, with tabpfn 8.5.0
+MODEL = "v3.5"  # the weights this release pins, with tabpfn 9.0.0
 
 
 def _cache_dir() -> Path | None:

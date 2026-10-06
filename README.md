@@ -1,24 +1,78 @@
 # ctabpfn
-Conformal prediction intervals around the native quantiles of TabPFN, the tabular foundation model. One inference over a dense 999-level quantile grid, every tenth of a percent, serves three split-conformal calibrations, each a single sort with an exact finite-sample coverage guarantee, no grid search and no refitting. The step size bounds the only grid artifact, a one-sided rounding conservatism in the quantile-level variant of at most two steps of coverage, so 0.001 keeps it under 0.2 points, below what benchmark noise can resolve.
+Split-conformal prediction intervals for regression, built on the native predictive quantiles of TabPFN. By Samuel Anzalone and Jakob Heiss. Evaluated with [uq-bench](https://github.com/anzamuel/uq-bench).
 
-## Variants
-Every variant splits the incoming train part at the given seed, nine tenths for fitting by default with `fit_fraction` overriding, fits TabPFN on the larger part, calibrates on the smaller, and returns lower, upper, and the native median as center. The default follows a twelve-dataset ablation and the in-context nature of TabPFN, fit quality scales with context while the conformal guarantee needs only a modest calibration set; on small datasets a lower fraction trades width for steadier per-run coverage.
-- `additive`, CTABPFN-A: shifts the native `alpha/2` and `1 - alpha/2` quantiles outward by the order statistic of the CQR score `max(lower - y, y - upper)`; the margin may be negative and tighten the interval.
-- `multiplicative`, CTABPFN-M: scales the two half widths around the native median by the order statistic of the ratio score, so the correction adapts to the native local width and may shrink it.
-- `quantile_level`, CTABPFN-Q: calibrates the quantile level itself, distributional conformal prediction on the native CDF, choosing the deepest symmetric grid level whose intervals cover enough calibration points. It works at any target coverage, while the other two need `alpha/2` on the grid.
+## Method
+One TabPFN forward pass over the fitting split returns, for every calibration and test point, the quantiles $\hat q_\tau(x)$ on the grid $\tau \in \{0.001, 0.002, \ldots, 0.999\}$, with median $\hat m = \hat q_{0.5}$. Three calibrations share this inference, and none refits TabPFN. With miscoverage $\alpha = 1 - \text{coverage}$ and $n_1$ calibration points, A and M take $\hat t$ as the $\lceil (1-\alpha)(n_1+1) \rceil$-th smallest score.
 
-## Usage
+| function | variant | score $s_i$ | interval |
+| --- | --- | --- | --- |
+| `additive` | CTabPFN-A | $\max(\hat q_{\alpha/2}(X_i) - Y_i,\ Y_i - \hat q_{1-\alpha/2}(X_i))$ | $[\hat q_{\alpha/2} - \hat t,\ \hat q_{1-\alpha/2} + \hat t]$ |
+| `multiplicative` | CTabPFN-M | $\max\left(\frac{\hat m - Y_i}{\hat m - \hat q_{\alpha/2}},\ \frac{Y_i - \hat m}{\hat q_{1-\alpha/2} - \hat m}\right)$ | $[\hat m - \hat t(\hat m - \hat q_{\alpha/2}),\ \hat m + \hat t(\hat q_{1-\alpha/2} - \hat m)]$ |
+| `quantile_level` | CTabPFN-Q | largest grid $\tau$ with $Y_i \in [\hat q_\tau, \hat q_{1-\tau}]$ | $[\hat q_{\hat\tau},\ \hat q_{1-\hat\tau}]$ |
+
+For Q, $\hat\tau$ is the $\lfloor \alpha(n_1+1) \rfloor$-th smallest score, so both endpoints are native quantiles. The A margin can be negative and the M factor below one, so both can shrink the native interval. A and M need $\alpha/2$ on the grid, Q works at any coverage. Each function splits its training data at `seed`, fits on a `fit_fraction` share, default 0.9, and calibrates on the rest. It returns `lower`, `upper`, and the native median as `center`. A smaller fraction gives steadier per-split coverage on small datasets at the cost of wider intervals.
+
+## Quickstart with TabPFN-3.5
+```bash
+git clone -b v3.5 https://github.com/anzamuel/ctabpfn && cd ctabpfn
+export TABPFN_TOKEN=<your key>  # free Prior Labs account, accept the TabPFN license at https://ux.priorlabs.ai
+uv run examples/quickstart.py   # calibrates 90 percent intervals on five California-housing splits
+```
+The `v3.5` branch, tagged `v0.2.0`, pins tabpfn 9.0.0 with the TabPFN-3.5 weights, downloaded on first use. `main` and `v0.1.0` pin tabpfn 8.5.0 with the v3 weights. Only [uv](https://docs.astral.sh/uv/) is required.
+
+## Install
+```bash
+uv add "ctabpfn @ git+https://github.com/anzamuel/ctabpfn@v0.2.0"  # TabPFN-3.5
+uv add "ctabpfn @ git+https://github.com/anzamuel/ctabpfn@v0.1.0"  # TabPFN v3
+```
 ```python
 from ctabpfn import quantile_level
 
 lower, upper, center = quantile_level(X_train, y_train, X_test, coverage=0.9, seed=0)
 ```
+CPU inference is deterministic and handles a few thousand training rows. Set `TABPFN_DEVICE=cuda` or `mps` for larger data.
+
+## Guarantee
+If the training points and the test point are exchangeable, for instance i.i.d., all three variants satisfy
+
+$$\mathbb{P}\big(Y_{n+1} \in [\text{lower}(X_{n+1}), \text{upper}(X_{n+1})]\big) \ge 1 - \alpha$$
+
+for any data distribution and any TabPFN version. The probability is over the training data, the seeded fit-calibration split, and the test point. Coverage is marginal. It holds on average, not conditionally on $x$ and not for a single fixed split. If the scores are almost surely distinct, A and M also cover at most $1 - \alpha + 1/(n_1+1)$. The finite grid adds a one-sided caveat to Q. Rounding scores to the step $\delta = 0.001$ can raise its coverage by at most $2\delta = 0.002$ above a continuous level, and never lowers it.
+
+## Results
+From [uq-bench](https://github.com/anzamuel/uq-bench): 12 regression datasets, 10 seeds each, 80/20 train-test splits, target coverage 0.9. PICP is test coverage. NIW is mean interval width divided by the test response range. Both are averaged over all 120 runs.
+
+| method | PICP | NIW |
+| --- | --- | --- |
+| split conformal | 0.903 | 0.320 |
+| UACQR-P | 0.904 | 0.188 |
+| PCS-UQ | 0.900 | 0.127 |
+| CLEAR | 0.899 | 0.136 |
+| CTabPFN-A, v3 / v3.5 | 0.899 / 0.898 | 0.087 / 0.083 |
+| CTabPFN-M, v3 / v3.5 | 0.898 / 0.898 | 0.081 / 0.079 |
+| CTabPFN-Q, v3 / v3.5 | 0.899 / 0.899 | 0.079 / 0.075 |
+| native TabPFN, v3 / v3.5, no guarantee | 0.911 / 0.926 | 0.077 / 0.082 |
+
+Native TabPFN v3 coverage ranges from 0.875 to 1.000 across datasets. Per dataset, the median width of the best CTabPFN v3 variant is 0.75 of the best retrained baseline. In uq-bench this package runs as the methods `ctabpfn-{a,m,q}-v3` and `ctabpfn-{a,m,q}-v3.5`. The datasets are public Parquet tables at https://huggingface.co/datasets/anzamuel/uq-bench. The quickstart fetches California housing through scikit-learn.
 
 ## Cache
-`predict_quantiles` memoizes each TabPFN inference as float32 under `~/.cache/uq-bench/ctabpfn/<MODEL>`, keyed by a sha256 over the raw arrays, seed, quantile grid, tabpfn version, device, and model, so the three variants and every coverage level share one inference per split and different model generations never collide. `CTABPFN_CACHE` moves the cache root, setting it to an empty value disables it, and `UQ_BENCH_FAST` disables it too so determinism checks exercise real recomputation. `TABPFN_DEVICE` selects the inference device, default `cpu` for reproducible output.
+`predict_quantiles` stores each TabPFN inference as float32 under `~/.cache/uq-bench/ctabpfn/<MODEL>`. The key is a sha256 over the raw arrays, seed, quantile grid, tabpfn version, device, and model. The three variants and all coverage levels therefore share one inference per split, and model generations never collide. `CTABPFN_CACHE` moves the cache root, and an empty value disables it. `UQ_BENCH_FAST` also disables it, so determinism checks recompute. `TABPFN_DEVICE` selects the device, default `cpu` for reproducible output.
+
+## Versioning
+Each ctabpfn release pins one tabpfn release and one set of weights, exposed as `ctabpfn.MODEL`. The `v3.5` branch, release `v0.2.0`, ships `v3.5` on tabpfn 9.0.0. `main`, release `v0.1.0`, ships `v3` on tabpfn 8.5.0, the configuration of the paper. A new TabPFN generation gets a new release. Each [uq-bench](https://github.com/anzamuel/uq-bench) method folder pins one ctabpfn commit and names the model, for instance `ctabpfn-q-v3.5`.
 
 ## Development
 Run `./setup.sh` from the repository root to install dependencies with uv and the pre-commit hooks.
 
-## Versioning
-One ctabpfn release pins one tabpfn release and one set of weights, exposed as `ctabpfn.MODEL`. This release is `v3` on tabpfn 8.5.0, the configuration of the paper. A new TabPFN generation becomes a new ctabpfn release with the dependency and `MODEL` bumped, and a benchmark method folder pins exactly one ctabpfn commit and carries the model in its name, for instance `ctabpfn-q-v3`.
+## Citation
+```bibtex
+@misc{anzalone2026ctabpfn,
+  title  = {{CTabPFN}: Conformal Uncertainty Quantification with {TabPFN}},
+  author = {Anzalone, Samuel and Heiss, Jakob},
+  year   = {2026},
+  note   = {Preprint}
+}
+```
+
+## License
+Apache 2.0, see [LICENSE](LICENSE).

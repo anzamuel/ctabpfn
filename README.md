@@ -1,6 +1,8 @@
 # ctabpfn
 Split-conformal prediction intervals for regression, built on the native predictive quantiles of TabPFN. By Samuel Anzalone and Jakob Heiss. Evaluated with [uq-bench](https://github.com/anzamuel/uq-bench).
 
+Paper: [CTabPFN: Conformal Uncertainty Quantification with TabPFN](paper/ctabpfn.pdf), semester project, ETH Zurich, 2026.
+
 ## Method
 One TabPFN forward pass over the fitting split returns, for every calibration and test point, the quantiles $\hat q_\tau(x)$ on the grid $\tau \in \{0.001, 0.002, \ldots, 0.999\}$, with median $\hat m = \hat q_{0.5}$. Three calibrations share this inference, and none refits TabPFN. With miscoverage $\alpha = 1 - \text{coverage}$ and $n_1$ calibration points, A and M take $\hat t$ as the $\lceil (1-\alpha)(n_1+1) \rceil$-th smallest score.
 
@@ -79,12 +81,14 @@ Compared methods: split conformal [1, 2], UACQR-P [5], PCS-UQ [6], CLEAR [7], an
 10. F. D. van Leeuwen. Conformal Prediction for Tabular Prior-Data Fitted Networks with Missing Data. OpenReview preprint, 2025. [openreview:TnZcC7GXI5](https://openreview.net/forum?id=TnZcC7GXI5)
 
 ## Citation
+Samuel Anzalone and Jakob Heiss, [CTabPFN: Conformal Uncertainty Quantification with TabPFN](paper/ctabpfn.pdf), semester project, ETH Zurich, 2026.
 ```bibtex
 @misc{anzalone2026ctabpfn,
-  title  = {{CTabPFN}: Conformal Uncertainty Quantification with {TabPFN}},
-  author = {Anzalone, Samuel and Heiss, Jakob},
-  year   = {2026},
-  note   = {Preprint}
+  title        = {{CTabPFN}: Conformal Uncertainty Quantification with {TabPFN}},
+  author       = {Anzalone, Samuel and Heiss, Jakob},
+  year         = {2026},
+  howpublished = {Semester project, ETH Zurich},
+  url          = {https://github.com/anzamuel/ctabpfn/blob/main/paper/ctabpfn.pdf}
 }
 ```
 

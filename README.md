@@ -64,6 +64,20 @@ Each ctabpfn release pins one tabpfn release and one set of weights, exposed as 
 ## Development
 Run `./setup.sh` from the repository root to install dependencies with uv and the pre-commit hooks.
 
+## References
+Compared methods: split conformal [1, 2], UACQR-P [5], PCS-UQ [6], CLEAR [7], and native TabPFN [8, 9]. The A score is the CQR score [3], also applied to TabPFN in [10], and Q follows distributional conformal prediction [4]. TabPFN-3.5 has no published reference yet.
+
+1. V. Vovk, A. Gammerman, G. Shafer. Algorithmic Learning in a Random World. Springer, 2005.
+2. J. Lei, M. G'Sell, A. Rinaldo, R. J. Tibshirani, L. Wasserman. Distribution-Free Predictive Inference for Regression. Journal of the American Statistical Association, 113(523):1094-1111, 2018.
+3. Y. Romano, E. Patterson, E. J. Candès. Conformalized Quantile Regression. Advances in Neural Information Processing Systems 32, 2019.
+4. V. Chernozhukov, K. Wüthrich, Y. Zhu. Distributional Conformal Prediction. Proceedings of the National Academy of Sciences, 118(48), 2021. [arXiv:1909.07889](https://arxiv.org/abs/1909.07889)
+5. R. Rossellini, R. F. Barber, R. Willett. Integrating Uncertainty Awareness into Conformalized Quantile Regression. International Conference on Artificial Intelligence and Statistics, 2024. [arXiv:2306.08693](https://arxiv.org/abs/2306.08693)
+6. A. Agarwal, F. Xiao, R. Barter, O. Ronen, B. Fan, B. Yu. PCS-UQ: Uncertainty Quantification via the Predictability-Computability-Stability Framework. arXiv preprint, 2025. [arXiv:2505.08784](https://arxiv.org/abs/2505.08784)
+7. I. Azizi, J. Bodik, J. Heiss, B. Yu. CLEAR: Calibrated Learning for Epistemic and Aleatoric Risk. arXiv preprint, 2026. [arXiv:2507.08150](https://arxiv.org/abs/2507.08150)
+8. N. Hollmann, S. Müller, L. Purucker, A. Krishnakumar, M. Körfer, S. B. Hoo, R. T. Schirrmeister, F. Hutter. Accurate Predictions on Small Data with a Tabular Foundation Model. Nature, 637:319-326, 2025. [doi:10.1038/s41586-024-08328-7](https://doi.org/10.1038/s41586-024-08328-7)
+9. L. Grinsztajn, K. Flöge, O. Key, F. Birkel, P. Jund, B. Roof, et al. TabPFN-3: Technical Report. arXiv preprint, 2026. [arXiv:2605.13986](https://arxiv.org/abs/2605.13986)
+10. F. D. van Leeuwen. Conformal Prediction for Tabular Prior-Data Fitted Networks with Missing Data. OpenReview preprint, 2025. [openreview:TnZcC7GXI5](https://openreview.net/forum?id=TnZcC7GXI5)
+
 ## Citation
 ```bibtex
 @misc{anzalone2026ctabpfn,
